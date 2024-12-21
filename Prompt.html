@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat AI</title>
+    <script  src="./marked.min.js"></script>
+    <style>
+        :root {
+            --bg-color-light: #ffffff;
+            --text-color-light: #000000;
+            --bg-color-dark: #2c2c2c;
+            --text-color-dark: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+            background-color: var(--bg-color-light);
+            color: var(--text-color-light);
+        }
+
+        body.dark {
+            background-color: var(--bg-color-dark);
+            color: var(--text-color-dark);
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 10px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin: 10px 0;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        
+        }
+
+        .message {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+        .message.user {
+            background-color: #e0ffe0;
+            align-self: flex-end;
+            width: 80%;
+        }
+
+        .message.bot {
+            background-color: #e0f7ff;
+            align-self: flex-start;
+            width: 80%;
+        }
+
+        .input-bar {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-bar input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .input-bar button {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .input-bar button:hover {
+            background-color: #0056b3;
+        }
+
+        .theme-toggle {
+            cursor: pointer;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+
+        /*styling for ai formated text*/
+        .formatted-response {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.formatted-response ul {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.formatted-response code {
+    background-color: #f4f4f4;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.formatted-response pre {
+    background-color: #f4f4f4;
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto;
+}
+
+.formatted-response .highlight {
+    background-color: yellow;
+    font-weight: bold;
+}
+
+
+/*making code snippets looks like command prompt*/
+
+/* Overall terminal window */
+.terminal-window {
+  width: 80%;
+  margin: 20px auto;
+  background-color: #2d2d2d;
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: 'Courier New', Courier, monospace;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  border: 1px solid #444;
+}
+
+/* Terminal header (top bar) */
+.terminal-header {
+  display: flex;
+  align-items: center;
+  background-color: #3b3b3b;
+  padding: 5px 10px;
+}
+
+/* Terminal header buttons */
+.terminal-header .button {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 5px;
+}
+
+.terminal-header .red {
+  background-color: #ff5f56;
+}
+
+.terminal-header .yellow {
+  background-color: #ffbd2e;
+}
+
+.terminal-header .green {
+  background-color: #27c93f;
+}
+
+/* Terminal content */
+.terminal-window pre {
+  margin: 0;
+  padding: 15px;
+  background-color: #2d2d2d;
+  color: #dcdcdc;
+  overflow-x: auto;
+}
+
+.terminal-window code {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Optional: Add some fake terminal-like text colors */
+.terminal-window code span.command {
+  color: #00d4ff;
+}
+
+.terminal-window code span.output {
+  color: #a8ff60;
+}
+
+.terminal-window code span.error {
+  color: #ff6060;
+}
+
+
+
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Chat Application</h1>
+            <button id="theme-toggle" class="theme-toggle">Switch to Dark Theme</button>
+        </div>
+        <div class="messages" id="messages">
+            <div class="message bot">Hello! How can I help you?</div>
+        </div>
+        <div class="input-bar">
+            <input type="text" id="message-input" placeholder="Type a message...">
+            <button id="send-button">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+        const messages = document.getElementById('messages');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+
+        // Toggle theme
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark');
+            const isDark = body.classList.contains('dark');
+            themeToggle.textContent = isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme';
+        });
+
+        // Send message
+        sendButton.addEventListener('click', async (e) => {
+            e.preventDefault()
+            const messageText = messageInput.value.trim();
+            if (messageText) {
+                // Add user message
+                const userMessage = document.createElement('div');
+                userMessage.className = 'message user';
+                userMessage.textContent = messageText;
+                messages.appendChild(userMessage);
+
+
+
+try {
+    let req =  await    fetch("./AI", { method: "POST", body: JSON.stringify({ 'prompt': messageText }), headers: { "Content-Type": "application/json" } });
+           
+              let res = await req.text();
+
+                    const botMessage = document.createElement('div');
+                    botMessage.className = 'message bot';
+        
+            let formatText = formatAIResponse(res);
+
+                    botMessage.innerHTML = formatText;
+                    messages.appendChild(botMessage);
+                    messageInput.value = '';
+           
+
+} catch (error) {
+
+    if (error.message.includes("RECITATION")) {
+                        const botMessage = document.createElement('div');
+                        botMessage.className = 'message bot';
+                        botMessage.textContent = "Response blocked due to content policies. Try rephrasing your request.";
+                        messages.appendChild(botMessage);
+                        messageInput.value = '';
+                    } else {
+                        const botMessage = document.createElement('div');
+                        botMessage.className = 'message bot';
+                        botMessage.textContent = `${"An unexpected error occurred: " + error.message}`;
+                        messages.appendChild(botMessage);
+                        messageInput.value = '';
+                    }
+
+}
+
+                // Simulate bot response
+
+
+                // Clear input
+                messageInput.value = '';
+
+                // Scroll to bottom
+                messages.scrollTop = messages.scrollHeight;
+            }
+        });
+
+        // Send message on Enter key
+        messageInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                sendButton.click();
+            }
+        });
+
+
+        //format text message receieved from ai
+
+        function formatAIResponse(text, options = {}) {
+    const { highlightKeywords = [], addClass = '' } = options;
+
+    // Escape HTML special characters
+    const escapeHTML = (str) =>
+        str.replace(/&/g, '&amp;')
+           .replace(/</g, '&lt;')
+           .replace(/>/g, '&gt;')
+           .replace(/"/g, '&quot;')
+           .replace(/'/g, '&#039;');
+
+    // Highlight keywords
+    const highlightText = (str) => {
+        if (!highlightKeywords.length) return str;
+        highlightKeywords.forEach((keyword) => {
+            const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+            str = str.replace(regex, `<span class="highlight">${keyword}</span>`);
+        });
+        return str;
+    };
+
+    // Handle bullet points
+    const formatBulletPoints = (str) => {
+        return str.replace(/(^|\n)([*-]) (.+)/g, (match, p1, p2, p3) => {
+            return `${p1}<li>${p3}</li>`;
+        });
+    };
+
+
+
+
+
+    // Handle code blocks
+    const formatCodeBlocks = (str) => {
+        return str
+            .replace(/```([^`]+)```/g, (match, code) => {
+                return `<pre><code>${escapeHTML(code.trim())}</code></pre>`;
+            })
+            .replace(/`([^`]+)`/g, (match, inlineCode) => {
+                return `<code>${escapeHTML(inlineCode.trim())}</code>`;
+            });
+    };
+
+
+    function wrapDoubleAsteriskInBold(str) {
+    return text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+}
+
+    // Replace line breaks with <br>
+    const formatLineBreaks = (str) => {
+        return str.replace(/\n/g, '<br>');
+    };
+
+    function wrapCode(str){
+        return str.replace(/```(.*?)```/g, "<div class='.terminal-window'><pre class='command'><code class='output'>$1</code></pre></div>");
+    
+    }
+
+    // Apply formatting
+    let formattedText = text;
+    formattedText = escapeHTML(formattedText); // Escape HTML to prevent injection
+    formattedText = formatCodeBlocks(formattedText); // Handle code blocks
+    formattedText = formatBulletPoints(formattedText); // Format bullet points
+    formattedText = highlightText(formattedText); // Highlight keywords
+    formattedText = wrapDoubleAsteriskInBold(formattedText); //wrap double asterisk in bold
+    formattedText = wrapCode(formattedText); //wrap code snippet
+    formattedText = formatLineBreaks(formattedText); // Convert line breaks
+
+    // Wrap <ul> tags around bullet points
+    formattedText = formattedText.replace(/(<li>.+<\/li>)/g, '<ul>$1</ul>');
+
+    // Add optional class to the container
+    return `<div class="${addClass}">${formattedText}</div>`;
+}
+
+    </script>
+</body>
+
+</html>
