@@ -219,6 +219,8 @@
 </head>
 
 <body>
+<div id="org-name"></div>
+<div id="org-url"></div>
     <div class="container">
         <div class="header">
             <h1>Chat Application</h1>
@@ -232,6 +234,25 @@
             <button id="send-button">Send</button>
         </div>
     </div>
+<script type="module">
+const { GoogleGenerativeAI } = require( "@google/generative-ai");
+
+console.log("api", {{GEMINAIAPI}})
+
+const genAI = new GoogleGenerativeAI("AIzaSyCvEtRO-P06b339ODb9j7uU56SPWTnt7w4");
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+
+    async function fetchOrgData() {
+      const response = await fetch('https://api.github.com/orgs/250-offers');
+      const data = await response.json();
+      document.getElementById('org-name').textContent = data.login;
+      document.getElementById('org-url').textContent = data.html_url;
+    }
+    
+    window.onload = fetchOrgData;
+  </script>
+
 
     <script>
         const themeToggle = document.getElementById('theme-toggle');
@@ -388,6 +409,9 @@ try {
     // Add optional class to the container
     return `<div class="${addClass}">${formattedText}</div>`;
 }
+
+
+
 
     </script>
 </body>
